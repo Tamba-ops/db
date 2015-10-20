@@ -1,6 +1,4 @@
 import json
-import simplejson as simplejson
-
 
 def parse_boolean(data):
     if data == 'true' or data == 1 or data == '1':

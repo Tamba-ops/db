@@ -1,5 +1,5 @@
 from django.db import connection, IntegrityError
-from django.utils.datetime_safe import datetime, date
+from django.utils.datetime_safe import  date
 from django.views.decorators.csrf import csrf_exempt
 from util.data_info import positions
 from util.parsers import parse_boolean
