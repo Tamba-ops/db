@@ -8,6 +8,10 @@ def create_response_code_0(response):
 def create_response_code_5(message):
     return JsonResponse({"code": 5, "response": message})
 
+
+def create_response_code_1(message):
+    return JsonResponse({"code": 1, "response": message})
+
 response_code_3 = JsonResponse({"code": 3, "response": "required parameters are missing"})
 
 __author__ = 'root'

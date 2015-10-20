@@ -10,8 +10,10 @@ queries = {
                 username = %s
                 """,
 
-    'query_insert_follower': """INSERT INTO Followers (Follower_email, Followee_email)
-                                  VALUES (%s, %s)""",
+    'query_insert_follower': """INSERT INTO Followers SET
+                                    Follower_email = %s,
+                                    Followee_email = %s
+                                  """,
 
     'query_delete_follower': """DELETE FROM Followers
                               WHERE Follower_email = %s and
@@ -22,30 +24,16 @@ queries = {
 
     'query_select_user': "SELECT * FROM User WHERE email = %s",
 
-    'query_followers_user_desc': """SELECT u1.email from Followers f
-                        INNER JOIN User u on
-                        (u.email = f.Followee_email and u.email = %s)
-                        INNER JOIN User u1 ON u1.email = f.Follower_email
-                        ORDER BY u1.email DESC""",
+    'query_followers_user': """SELECT Follower_email FROM Followers
+                                    JOIN User ON Follower_email = email
+                                    WHERE Followee_email = %s
+                                    ORDER BY Follower_email DESC""",
 
 
-    'query_followers_user_asc': """SELECT u1.email from Followers f
-                        INNER JOIN User u on
-                        (u.email = f.Followee_email and u.email = %s)
-                        INNER JOIN User u1 ON u1.email = f.Follower_email
-                        ORDER BY u1.email ASC""",
-
-    'query_following_user_desc': """SELECT u1.email from Followers f
-                        INNER JOIN User u on
-                        (u.email = f.Follower_email and u.email = %s)
-                        INNER JOIN User u1 ON u1.email = f.Followee_email
-                        ORDER BY u1.email DESC""",
-
-    'query_following_user_asc': """SELECT u1.email from Followers f
-                        INNER JOIN User u on
-                        (u.email = f.Follower_email and u.email = %s)
-                        INNER JOIN User u1 ON u1.email = f.Followee_email
-                        ORDER BY u1.email ASC""",
+    'query_following_user': """SELECT Followee_email FROM Followers
+                                    JOIN User ON Followee_email = email
+                                    WHERE Follower_email = %s
+                                    ORDER BY Followee_email DESC""",
 
     'query_update_user': """UPDATE User
                         SET name = %s, about = %s
@@ -96,7 +84,7 @@ queries = {
 
     'query_update_thread_restore': """UPDATE Thread
                                     SET
-                                    isDeleted = TRUE
+                                    isDeleted = FALSE
                                     WHERE id = %s""",
 
     'query_subscriptions_insert': """INSERT INTO Subscriptions
@@ -172,25 +160,27 @@ queries = {
 
     'query_update_post_restore': """UPDATE Post
                                     SET
-                                    isDeleted = TRUE
+                                    isDeleted = FALSE
                                     WHERE id = %s""",
 
     'query_update_post': """UPDATE Post
                             SET
                             message = %s
                             WHERE id = %s""",
+
     'query_list_users_forum': """SELECT u.email FROM Forum f
                                   JOIN Post p ON f.short_name = p.Forum_short_name
                                   AND Forum_short_name = %s
-                                  JOIN User u ON u.email = f.User_email
-                                  ORDER BY u.name DESC
+                                  JOIN User u ON u.email = p.User_email
+                                  WHERE u.id >= -2
+                                  GROUP BY u.name DESC
                                 """,
 
     'query_post_mpath': "SELECT mpath FROM Post WHERE id = %s",
 
     'query_count_post_in_tree': "SELECT count(*) FROM Post WHERE mpath LIKE %s",
 
-    'query_delete': "DELETE FROM %s",
+    'query_delete': "TRUNCATE TABLE ",
 
     'query_count_post': "SELECT count(*) FROM Post",
 
@@ -199,6 +189,31 @@ queries = {
     'query_count_thread': "SELECT count(*) FROM Thread",
 
     'query_count_forum': "SELECT count(*) FROM Forum",
+
+    'query_change_foreign_check': 'SET foreign_key_checks = %s',
+
+    'query_find_id_of_parent': 'SELECT id FROM Post WHERE mpath LIKE %s',
+
+    'query_count_posts_in_thread': 'SELECT count(*) FROM Post WHERE thread = %s and isDeleted = FALSE',
+
+    'query_post_points': 'SELECT cast(likes AS signed) - cast(dislikes AS signed) likes FROM Post WHERE id = %s',
+
+    'query_thread_points': 'SELECT cast(likes AS signed) - cast(dislikes AS signed) likes FROM Thread WHERE id = %s',
+
+    'query_count_user_subscriptions': """SELECT Thread_id FROM Subscriptions
+                                          WHERE User_email = %s""",
+
+    'query_remove_posts_in_deleted_thread': """UPDATE Post
+                                            SET
+                                            isDeleted = TRUE
+                                            WHERE thread = %s
+                                            """,
+
+    'query_restore_posts_in_deleted_thread': """UPDATE Post
+                                            SET
+                                            isDeleted = FALSE
+                                            WHERE thread = %s
+                                            """,
 }
 
 __author__ = 'root'

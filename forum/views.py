@@ -1,7 +1,9 @@
+from django.views.decorators.csrf import csrf_exempt
 from util.responses import *
 from util.basic_functions import create_basic, get_details_basic, handle_response, list_basic
 
 
+@csrf_exempt
 def create(request):
     return create_basic(request, 'forum')
 
@@ -11,7 +13,7 @@ def get_details_forum(short_name, related=None):
 
 
 def details(request):
-    short_name = request.GET.get('short_name')
+    short_name = request.GET.get('forum')
     if not short_name:
         return response_code_3
 

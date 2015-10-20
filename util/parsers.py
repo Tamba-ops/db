@@ -1,3 +1,7 @@
+import json
+import simplejson as simplejson
+
+
 def parse_boolean(data):
     if data == 'true' or data == 1 or data == '1':
         return True
@@ -12,5 +16,15 @@ def parse_like(value):
         return 'dislike'
     if value == '1' or value == 1:
         return 'like'
+
+
+def parse_post(data):
+    print(data.body)
+    new_data = data.body.decode('utf-8')
+    print(new_data)
+    resp = json.loads(new_data)
+    print(resp)
+    return json.loads(data.body.decode('utf-8'))
+
 
 __author__ = 'fatman'

@@ -24,7 +24,7 @@ positions = {
     ],
 
     "user_additional": [
-
+        'subscriptions'
     ],
 
     "forum_required": [
@@ -59,7 +59,9 @@ positions = {
 
     "thread_additional": [
         'likes',
-        'dislikes'
+        'dislikes',
+        'posts',
+        'points'
     ],
 
     "post_required": [
@@ -76,13 +78,14 @@ positions = {
         "isDeleted",
         "isEdited",
         "isHighlighted",
-        "isSpam",
-        "parent"
+        "isSpam"
     ],
 
     "post_additional": [
         "likes",
-        "dislikes"
+        "dislikes",
+        "mpath",
+        "points"
     ]
 }
 

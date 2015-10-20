@@ -1,9 +1,11 @@
+from django.views.decorators.csrf import csrf_exempt
 from util.responses import *
 from util.basic_functions import update,\
     create_basic, get_details_basic, handle_response,\
     update_boolean_field, list_basic, vote
 
 
+@csrf_exempt
 def create(request):
     return create_basic(request, 'post')
 
@@ -27,17 +29,21 @@ def list_posts(request):
     return list_basic(request, 'post')
 
 
+@csrf_exempt
 def remove_post(request):
     return update_boolean_field(request, 'post', 'remove')
 
 
+@csrf_exempt
 def restore_post(request):
     return update_boolean_field(request, 'post', 'restore')
 
 
+@csrf_exempt
 def vote_post(request):
     return vote(request, 'post')
 
 
+@csrf_exempt
 def update_post(request):
     return update(request, 'post', ['message'])
