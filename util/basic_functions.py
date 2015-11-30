@@ -1,7 +1,9 @@
+# coding=utf-8
 from django.db import connection, IntegrityError
-from django.utils.datetime_safe import  date
+from django.utils.datetime_safe import date
 from django.views.decorators.csrf import csrf_exempt
 from util.data_info import positions
+from util.errors import Code3Exception, Code5Exception, Code1Exception
 from util.parsers import parse_boolean
 from util.responses import *
 from util.queries import queries
@@ -144,7 +146,7 @@ def create_basic(request, entity):
 
     for value in data:
         if value == 'iNone':
-            return response_code_3
+            raise Code3Exception
 
     if entity == 'post':
         data.append(create_mpath(request_post.get('parent')))
@@ -169,7 +171,7 @@ def create_basic(request, entity):
         cursor.execute(query_create, data)
     except IntegrityError:
         message = 'Cannot create ' + entity
-        return create_response_code_5(message)
+        raise Code5Exception(message)
 
     query_id_key = 'query_select_max_id_' + entity
     query_id = queries[query_id_key]
@@ -192,7 +194,7 @@ def get_details_basic(key, entity, related=None):
 
     message = 'There is no such ' + entity
     if not row:
-        return create_response_code_1(message)
+        raise Code1Exception(message)
 
     return handle_related_entities(related, convert_fields_to_json(row[0], entity))
 
@@ -202,18 +204,18 @@ def handle_related_entities(related, response):
         if 'forum' in related:
             forum = response.get('forum', 'iNone')
             if forum == 'iNone':
-                return response_code_3
+                raise Code3Exception
             response['forum'] = get_details_basic(forum, 'forum')
         if 'user' in related:
             user = response.get('user', 'iNone')
             if user == 'iNone':
-                return response_code_3
+                raise Code3Exception
             from my_user.views import get_details_user
             response['user'] = get_details_user(user)
         if 'thread' in related:
             thread = response.get('thread', 'iNone')
             if thread == 'iNone':
-                return response_code_3
+                raise Code3Exception
             response['thread'] = get_details_basic(thread, 'thread')
 
     return response
@@ -221,13 +223,6 @@ def handle_related_entities(related, response):
 
 def convert_to_one_array(cursor):
     return [row[0] for row in cursor.fetchall()]
-
-
-def handle_response(response):
-    if isinstance(response, JsonResponse):
-        return response
-
-    return create_response_code_0(response)
 
 
 # considering that all boolean field names start with 'is'
@@ -312,7 +307,7 @@ def list_basic(request, entity):
         key = thread
         query_string = 'thread'
     else:
-        return response_code_3
+        raise Code3Exception
 
     query_key = 'query_list_' + entity + 's_' + query_string
 
@@ -336,10 +331,7 @@ def list_basic(request, entity):
             temp = get_details_user(entity_id)
         else:
             temp = get_details_basic(entity_id, entity, related)
-        if not isinstance(temp, JsonResponse):
-            result_ids[index] = temp
-        else:
-            return create_response_code_5('Related entities are missing')
+        result_ids[index] = temp
 
     return create_response_code_0(result_ids)
 
@@ -348,7 +340,7 @@ def update_boolean_field(request, entity, action):
     cursor = connection.cursor()
     entity_key = parse_post(request)[entity]
     if not entity_key:
-        return response_code_3
+        raise Code3Exception
 
     query_update = 'query_update_' + entity + '_' + action
 
@@ -362,7 +354,7 @@ def vote(request, entity):
     like = request_post.get('vote')
 
     if not entity_key or not like:
-        return response_code_3
+        raise Code3Exception
 
     action = parse_like(like)
 
@@ -384,12 +376,12 @@ def update(request, entity, parameters_to_change):
         if value:
             data.append(value)
         else:
-            return response_code_3
+            raise Code3Exception
 
     entity_key = request_post.get(entity)
 
     if not entity_key:
-        return response_code_3
+        raise Code3Exception
 
     data.append(entity_key)
 
@@ -399,7 +391,7 @@ def update(request, entity, parameters_to_change):
     try:
         cursor.execute(queries[query_update_key], data)
     except IntegrityError:
-        return create_response_code_5('cannot update ' + entity)
+        raise Code5Exception('cannot update ' + entity)
 
     if entity == 'user':
         from my_user.views import get_details_user
@@ -407,6 +399,19 @@ def update(request, entity, parameters_to_change):
     else:
         response = get_details_basic(entity_key, entity)
 
-    return handle_response(response)
+    return create_response_code_0(response)
+
+
+def validate_response(func):
+    def func_wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Code3Exception:
+            return response_code_3
+        except Code5Exception as e5:
+            return create_response_code_5(str(e5))
+        except Code1Exception as e1:
+            return create_response_code_1(str(e1))
+    return func_wrapper
 
 __author__ = 'root'

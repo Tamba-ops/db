@@ -1,4 +1,4 @@
-
+# coding=utf-8
 boolean_fields = {
     "isAnonymous",
     "isApproved",

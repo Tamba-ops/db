@@ -1,4 +1,6 @@
+# coding=utf-8
 import json
+
 
 def parse_boolean(data):
     if data == 'true' or data == 1 or data == '1':

@@ -1,3 +1,4 @@
+# coding=utf-8
 
 queries = {
     'query_insert_user': """
@@ -21,14 +22,12 @@ queries = {
 
     'query_select_max_id_user': "SELECT MAX(id) FROM User",
 
-
     'query_select_user': "SELECT * FROM User WHERE email = %s",
 
     'query_followers_user': """SELECT Follower_email FROM Followers
                                     JOIN User ON Follower_email = email
                                     WHERE Followee_email = %s
                                     ORDER BY Follower_email DESC""",
-
 
     'query_following_user': """SELECT Followee_email FROM Followers
                                     JOIN User ON Followee_email = email
@@ -168,10 +167,9 @@ queries = {
                             message = %s
                             WHERE id = %s""",
 
-    'query_list_users_forum': """SELECT u.email FROM Forum f
-                                  JOIN Post p ON f.short_name = p.Forum_short_name
-                                  AND Forum_short_name = %s
+    'query_list_users_forum': """SELECT u.email FROM Post p
                                   JOIN User u ON u.email = p.User_email
+                                  AND Forum_short_name = %s
                                   WHERE u.id >= -2
                                   GROUP BY u.name DESC
                                 """,
