@@ -60,8 +60,8 @@ positions = {
     "thread_additional": [
         'likes',
         'dislikes',
-        'posts',
-        'points'
+        'points',
+        'posts'
     ],
 
     "post_required": [
@@ -84,8 +84,8 @@ positions = {
     "post_additional": [
         "likes",
         "dislikes",
-        "mpath",
-        "points"
+        "points",
+        "mpath"
     ]
 }
 

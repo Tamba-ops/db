@@ -48,16 +48,8 @@ def convert_fields_to_json(details, entity):
             entity_id = details[index]
         if field == 'id' and entity == 'post':
             entity_id = details[index]
-        if field == 'posts':
-            cursor.execute(queries['query_count_posts_in_thread'], entity_id)
-            posts = cursor.fetchone()
-            if posts:
-                posts = posts[0]
-            else:
-                posts = 0
-            result[field] = convert_if_needed(field, posts)
 
-        elif field == 'subscriptions':
+        if field == 'subscriptions':
             cursor.execute(queries['query_count_user_subscriptions'], user_email)
             subscriptions = convert_to_one_array(cursor)
 
@@ -74,10 +66,8 @@ def convert_fields_to_json(details, entity):
                 parent_id = None
             result[field] = convert_if_needed(field, parent_id)
         elif field == 'points':
-            query_key = 'query_' + entity + '_points'
-            cursor.execute(queries[query_key], entity_id)
-            points = cursor.fetchone()[0]
-            result[field] = convert_if_needed(field, points)
+            result[field] = \
+                convert_if_needed(field, result['likes'] - result['dislikes'])
         else:
             result[field] = convert_if_needed(field, details[index])
 
@@ -182,6 +172,7 @@ def create_basic(request, entity):
 
     resp = create_response_code_0(all_parameters)
 
+    #return JsonResponse({}).status_code(200)
     return resp
 
 
