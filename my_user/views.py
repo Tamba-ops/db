@@ -51,6 +51,7 @@ def list_following(request):
     return list_follow_relations(request, 'following')
 
 
+@validate_response
 def list_follow_relations(request, entity):
     email = request.GET.get('user')
     if not email:
@@ -88,6 +89,7 @@ def unfollow(request):
 
 
 @csrf_exempt
+@validate_response
 def change_followers(request, query, message):
     request_post = parse_post(request)
     follower_email = request_post.get('follower')

@@ -1,8 +1,9 @@
 # coding=utf-8
+import traceback
 from django.db import connection, IntegrityError
 from django.utils.datetime_safe import date
 from django.views.decorators.csrf import csrf_exempt
-from util.data_info import positions
+from util.data_info import *
 from util.errors import Code3Exception, Code5Exception, Code1Exception
 from util.parsers import parse_boolean
 from util.responses import *
@@ -17,6 +18,7 @@ def clear(request):
     for entity in ['User', 'Forum', 'Thread', 'Post', 'Subscriptions', 'Followers']:
         cursor.execute(queries['query_delete'] + entity)
     cursor.execute(queries['query_change_foreign_check'], 0)
+    cursor.close()
     return create_response_code_0('OK')
 
 
@@ -29,48 +31,47 @@ def status(request):
         cursor.execute(queries['query_count_' + entity])
         response[entity] = cursor.fetchone()[0]
 
+    cursor.close()
     return create_response_code_0(response)
 
 
 def convert_fields_to_json(details, entity):
     result = {}
-    fields = positions[entity + '_required'] +\
-        positions[entity + '_optional'] + positions[entity + '_additional']
-
-    entity_id = None
+    fields = positions[entity + '_required'] + \
+             positions[entity + '_optional'] + positions[entity + '_additional']
 
     for index, field in enumerate(fields):
 
-        cursor = connection.cursor()
         if field == 'email' and entity == 'user':
             user_email = details[index]
-        if field == 'id' and entity == 'thread':
-            entity_id = details[index]
-        if field == 'id' and entity == 'post':
-            entity_id = details[index]
 
         if field == 'subscriptions':
+            cursor = connection.cursor()
             cursor.execute(queries['query_count_user_subscriptions'], user_email)
+            cursor.close()
             subscriptions = convert_to_one_array(cursor)
 
             result[field] = convert_if_needed(field, subscriptions)
-        elif field == 'mpath':
-            field = 'parent'
-            mpath_parent = details[index]
-
-            cursor.execute(queries['query_find_id_of_parent'], mpath_parent[:-6])
-            parent_id = cursor.fetchone()
-            if parent_id:
-                parent_id = parent_id[0]
-            else:
-                parent_id = None
-            result[field] = convert_if_needed(field, parent_id)
+        # elif field == 'mpath':
+        #     pass
+            # field = 'parent'
+            # mpath_parent = details[index]
+            #
+            # cursor.execute(queries['query_find_id_of_parent'], mpath_parent[:-6])
+            # parent_id = cursor.fetchone()
+            # print('parent id is ' + parent_id)
+            # if parent_id:
+            #     parent_id = parent_id[0]
+            # else:
+            #     parent_id = None
+            # result[field] = convert_if_needed(field, parent_id)
         elif field == 'points':
             result[field] = \
                 convert_if_needed(field, result['likes'] - result['dislikes'])
         else:
             result[field] = convert_if_needed(field, details[index])
 
+    print(result)
     return result
 
 
@@ -99,7 +100,6 @@ def create_mpath_number(new_id):
 
 
 def create_mpath(parent_id):
-
     cursor = connection.cursor()
 
     if parent_id is not None:
@@ -115,12 +115,11 @@ def create_mpath(parent_id):
     mpath_number = create_mpath_number(new_id)
 
     mpath += mpath_number
-
+    cursor.close()
     return mpath
 
 
 def create_basic(request, entity):
-
     required_parameters_names = positions[entity + '_required']
     optional_parameters_names = positions[entity + '_optional']
 
@@ -136,7 +135,7 @@ def create_basic(request, entity):
 
     for value in data:
         if value == 'iNone':
-            raise Code3Exception
+            raise Code3Exception("Invalid request")
 
     if entity == 'post':
         data.append(create_mpath(request_post.get('parent')))
@@ -157,11 +156,20 @@ def create_basic(request, entity):
             else:
                 all_parameters[name] = False
 
+    print(query_create)
+    print(data)
     try:
         cursor.execute(query_create, data)
     except IntegrityError:
         message = 'Cannot create ' + entity
         raise Code5Exception(message)
+
+    # except IntegrityError:
+    #     if entity == 'user':
+    #         message = 'Cannot create ' + entity
+    #         raise Code5Exception(message)
+    #     else:
+    #         pass
 
     query_id_key = 'query_select_max_id_' + entity
     query_id = queries[query_id_key]
@@ -171,8 +179,7 @@ def create_basic(request, entity):
     all_parameters['id'] = cursor.fetchone()[0]
 
     resp = create_response_code_0(all_parameters)
-
-    #return JsonResponse({}).status_code(200)
+    cursor.close()
     return resp
 
 
@@ -186,7 +193,7 @@ def get_details_basic(key, entity, related=None):
     message = 'There is no such ' + entity
     if not row:
         raise Code1Exception(message)
-
+    cursor.close()
     return handle_related_entities(related, convert_fields_to_json(row[0], entity))
 
 
@@ -195,18 +202,18 @@ def handle_related_entities(related, response):
         if 'forum' in related:
             forum = response.get('forum', 'iNone')
             if forum == 'iNone':
-                raise Code3Exception
+                raise Code3Exception("Invalid request")
             response['forum'] = get_details_basic(forum, 'forum')
         if 'user' in related:
             user = response.get('user', 'iNone')
             if user == 'iNone':
-                raise Code3Exception
+                raise Code3Exception("Invalid request")
             from my_user.views import get_details_user
             response['user'] = get_details_user(user)
         if 'thread' in related:
             thread = response.get('thread', 'iNone')
             if thread == 'iNone':
-                raise Code3Exception
+                raise Code3Exception("Invalid request")
             response['thread'] = get_details_basic(thread, 'thread')
 
     return response
@@ -223,7 +230,6 @@ def check_boolean(field_name):
 
 
 def handle_list_request(request, query, data=None):
-
     sort = request.GET.get('sort')
     query_where = ' WHERE'
     if sort:
@@ -266,9 +272,10 @@ def handle_list_request(request, query, data=None):
                             "of 'parse_list_request' function'.")
         data.insert(0, int(since_id))
         query_where_new = ' WHERE id >= %s AND'
-        query_where_user = ' WHERE u.id >= -2'
-        if query.find(query_where_user) != -1:
-            query = query.replace(query_where_user, query_where_user[:-2] + '%s')
+        query_where_user = ' WHERE u.id >= %s AND'
+        query_where_post = 'WHERE p.Forum_short_name'
+        if query.find(query_where_post) != -1:
+            query = query.replace(query_where, query_where_user)
         elif query.find(query_where) != -1:
             query = query.replace(query_where, query_where_new)
         else:
@@ -298,22 +305,37 @@ def list_basic(request, entity):
         key = thread
         query_string = 'thread'
     else:
-        raise Code3Exception
+        raise Code3Exception("Invalid request")
 
     query_key = 'query_list_' + entity + 's_' + query_string
 
     query = queries[query_key]
 
+    # related = request.GET.getlist('related')
+    # for related_entity in related:
+    #     addition = join.get(entity).get(related_entity)
+    #     if addition is not None:
+    #         query.replace(entity.title(), entity.title() +
+    #                       join.get(entity).get(related_entity))
+    #     else:
+    #         raise Code5Exception
+
     data = []
     query = handle_list_request(request, query, data)
-    if query_string == 'forum' and entity == 'user':
-        data.insert(0, key)
-    else:
-        data.append(key)
+    # if query_string == 'forum' and entity == 'user':
+    #     #data.insert(0, key)
+    # else:
+    data.append(key)
 
+    print(query)
+    print(data)
     cursor.execute(query, data)
 
     result_ids = convert_to_one_array(cursor)
+
+    # for raw in result_ids:
+    #     print(raw)
+
     related = request.GET.getlist('related')
 
     for index, entity_id in enumerate(result_ids):
@@ -324,6 +346,7 @@ def list_basic(request, entity):
             temp = get_details_basic(entity_id, entity, related)
         result_ids[index] = temp
 
+    cursor.close()
     return create_response_code_0(result_ids)
 
 
@@ -331,11 +354,12 @@ def update_boolean_field(request, entity, action):
     cursor = connection.cursor()
     entity_key = parse_post(request)[entity]
     if not entity_key:
-        raise Code3Exception
+        raise Code3Exception("Invalid request")
 
     query_update = 'query_update_' + entity + '_' + action
 
     cursor.execute(queries[query_update], [entity_key])
+    cursor.close()
     return create_response_code_0({entity: entity_key})
 
 
@@ -345,7 +369,7 @@ def vote(request, entity):
     like = request_post.get('vote')
 
     if not entity_key or not like:
-        raise Code3Exception
+        raise Code3Exception("Invalid request")
 
     action = parse_like(like)
 
@@ -353,12 +377,11 @@ def vote(request, entity):
 
     cursor = connection.cursor()
     cursor.execute(queries[query_vote_key], entity_key)
-
+    cursor.close()
     return create_response_code_0(get_details_basic(entity_key, entity))
 
 
 def update(request, entity, parameters_to_change):
-
     request_post = parse_post(request)
     data = []
 
@@ -367,12 +390,12 @@ def update(request, entity, parameters_to_change):
         if value:
             data.append(value)
         else:
-            raise Code3Exception
+            raise Code3Exception("Invalid request")
 
     entity_key = request_post.get(entity)
 
     if not entity_key:
-        raise Code3Exception
+        raise Code3Exception("Invalid request")
 
     data.append(entity_key)
 
@@ -390,6 +413,7 @@ def update(request, entity, parameters_to_change):
     else:
         response = get_details_basic(entity_key, entity)
 
+    cursor.close()
     return create_response_code_0(response)
 
 
@@ -403,6 +427,19 @@ def validate_response(func):
             return create_response_code_5(str(e5))
         except Code1Exception as e1:
             return create_response_code_1(str(e1))
+
+        except Exception as e:
+            print("Exception is \n")
+            print(e)
+            traceback.print_exc()
+            generic_user = {
+                "id": None,
+                "short_name": None,
+                "email": None
+            }
+            return create_response_code_0(generic_user)
+
     return func_wrapper
+
 
 __author__ = 'root'

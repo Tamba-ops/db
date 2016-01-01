@@ -10,6 +10,13 @@ boolean_fields = {
     "isClosed"
 }
 
+columns_number = {
+    "user": 6,
+    "post": 15,
+    "thread": 13,
+    "forum": 4
+}
+
 positions = {
     "user_required": [
         "id",
@@ -78,7 +85,8 @@ positions = {
         "isDeleted",
         "isEdited",
         "isHighlighted",
-        "isSpam"
+        "isSpam",
+        "parent"
     ],
 
     "post_additional": [
@@ -87,6 +95,14 @@ positions = {
         "points",
         "mpath"
     ]
+}
+
+join = {
+    "post": {
+        "forum": " JOIN Forum ON Forum.short_name = Post.Forum_short_name",
+        "thread": " JOIN Thread ON Thread.id = Post.thread",
+        "user": " JOIN User ON User.email = Post.User_email"
+    }
 }
 
 __author__ = 'fatman'

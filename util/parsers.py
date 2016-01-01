@@ -19,11 +19,6 @@ def parse_like(value):
 
 
 def parse_post(data):
-    print(data.body)
-    new_data = data.body.decode('utf-8')
-    print(new_data)
-    resp = json.loads(new_data)
-    print(resp)
     return json.loads(data.body.decode('utf-8'))
 
 

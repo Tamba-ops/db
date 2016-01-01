@@ -11,7 +11,6 @@ def create(request):
     return create_basic(request, 'forum')
 
 
-@validate_response
 def get_details_forum(short_name, related=None):
     return get_details_basic(short_name, 'forum', related)
 

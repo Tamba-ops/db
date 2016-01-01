@@ -20,7 +20,7 @@ queries = {
                               WHERE Follower_email = %s and
                               Followee_email = %s""",
 
-    'query_select_max_id_user': "SELECT MAX(id) FROM User",
+    'query_select_max_id_user': "SELECT LAST_INSERT_ID()",
 
     'query_select_user': "SELECT * FROM User WHERE email = %s",
 
@@ -46,7 +46,7 @@ queries = {
                             User_email = %s
                           """,
 
-    'query_select_max_id_forum': "SELECT Max(id) FROM Forum",
+    'query_select_max_id_forum': "SELECT LAST_INSERT_ID()",
 
     'query_select_forum': "SELECT * FROM Forum WHERE short_name = %s",
 
@@ -62,7 +62,7 @@ queries = {
                                 Forum_short_name = %s
                               """,
 
-    'query_select_max_id_thread': "SELECT Max(id) FROM Thread",
+    'query_select_max_id_thread': "SELECT LAST_INSERT_ID()",
 
     'query_select_thread': "SELECT * FROM Thread WHERE id = %s",
 
@@ -126,15 +126,15 @@ queries = {
 
     'query_select_post': "SELECT * FROM Post WHERE id = %s",
 
-    'query_select_max_id_post': "SELECT max(id) FROM Post",
+    'query_select_max_id_post': "SELECT LAST_INSERT_ID()",
 
     'query_list_posts_forum': """SELECT id FROM Post
                                   WHERE Forum_short_name = %s
                                   ORDER BY date DESC
                                 """,
 
-    'query_list_posts_user': """SELECT id FROM Post
-                                  WHERE User_email = %s
+    'query_list_posts_user': """SELECT id FROM Post p
+                                  WHERE p.User_email = %s
                                   ORDER BY date DESC
                                 """,
 
@@ -169,8 +169,7 @@ queries = {
 
     'query_list_users_forum': """SELECT u.email FROM Post p
                                   JOIN User u ON u.email = p.User_email
-                                  AND Forum_short_name = %s
-                                  WHERE u.id >= -2
+                                  WHERE p.Forum_short_name = %s
                                   GROUP BY u.name DESC
                                 """,
 

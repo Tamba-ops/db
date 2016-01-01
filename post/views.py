@@ -29,6 +29,7 @@ def get_details_post(post_id, related=None):
     return get_details_basic(post_id, 'post', related)
 
 
+@validate_response
 def list_posts(request):
     return list_basic(request, 'post')
 
