@@ -8,7 +8,8 @@ def parse_boolean(data):
     elif data == 'false' or data == 0 or data == '0':
         return False
     else:
-        raise Exception("Boolean parameters must be 'true', 'false', '1', '0' or 1, 0")
+        raise Exception("Boolean parameters must be 'true', 'false', " +
+                        "'1', '0' or 1, 0\nGot " + data + " instead.")
 
 
 def parse_like(value):

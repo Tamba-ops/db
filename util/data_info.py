@@ -31,7 +31,9 @@ positions = {
     ],
 
     "user_additional": [
-        'subscriptions'
+        'subscriptions',
+        'following',
+        'followers'
     ],
 
     "forum_required": [

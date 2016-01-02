@@ -3,7 +3,7 @@ from django.db import connection, IntegrityError
 from django.views.decorators.csrf import csrf_exempt
 from util.basic_functions import convert_to_one_array,\
     create_basic, get_details_basic, handle_list_request, \
-    update, list_basic, validate_response
+    update, list_basic, validate_response, convert_fields_to_json
 from util.errors import Code3Exception, Code5Exception
 from util.queries import queries
 from util.responses import *
@@ -58,18 +58,22 @@ def list_follow_relations(request, entity):
         raise Code3Exception
 
     data = []
-    query = handle_list_request(request, queries['query_' + entity + '_user'], data)
+    query = handle_list_request(request, queries['query_' + entity + '_user_full'], data)
 
     data.append(email)
     cursor = connection.cursor()
     cursor.execute(query, data)
 
-    followers = convert_to_one_array(cursor)
-
     result = []
+    for row in cursor:
+        result.append(convert_fields_to_json(row, 'user'))
 
-    for follower in followers:
-        result.append(get_details_user(follower))
+    # followers = convert_to_one_array(cursor)
+
+    # result = []
+
+    # for follower in followers:
+    #     result.append(get_details_user(follower))
 
     return create_response_code_0(result)
 

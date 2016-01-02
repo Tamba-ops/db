@@ -25,12 +25,22 @@ queries = {
     'query_select_user': "SELECT * FROM User WHERE email = %s",
 
     'query_followers_user': """SELECT Follower_email FROM Followers
-                                    JOIN User ON Follower_email = email
+                                    force index (followee_follower)
+                                    WHERE Followee_email = %s
+                                    ORDER BY Follower_email DESC""",
+
+    'query_followers_user_full': """SELECT u.* FROM Followers
+                                    JOIN User u ON Follower_email = email
                                     WHERE Followee_email = %s
                                     ORDER BY Follower_email DESC""",
 
     'query_following_user': """SELECT Followee_email FROM Followers
-                                    JOIN User ON Followee_email = email
+                                    force index (follower_followee)
+                                    WHERE Follower_email = %s
+                                    ORDER BY Followee_email DESC""",
+
+    'query_following_user_full': """SELECT u.* FROM Followers
+                                    JOIN User u ON Followee_email = email
                                     WHERE Follower_email = %s
                                     ORDER BY Followee_email DESC""",
 
@@ -95,11 +105,11 @@ queries = {
                                       User_email = %s AND
                                       Thread_id = %s""",
 
-    'query_list_threads_forum': """SELECT id FROM Thread
+    'query_list_threads_forum': """SELECT * FROM Thread
                                     WHERE Forum_short_name = %s
                                     ORDER BY date DESC""",
 
-    'query_list_threads_user': """SELECT id FROM Thread
+    'query_list_threads_user': """SELECT * FROM Thread
                                     WHERE User_email = %s
                                     ORDER BY date DESC""",
     'query_threads_like': """UPDATE Thread
@@ -128,17 +138,17 @@ queries = {
 
     'query_select_max_id_post': "SELECT LAST_INSERT_ID()",
 
-    'query_list_posts_forum': """SELECT id FROM Post
+    'query_list_posts_forum': """SELECT * FROM Post
                                   WHERE Forum_short_name = %s
                                   ORDER BY date DESC
                                 """,
 
-    'query_list_posts_user': """SELECT id FROM Post p
+    'query_list_posts_user': """SELECT * FROM Post p
                                   WHERE p.User_email = %s
                                   ORDER BY date DESC
                                 """,
 
-    'query_list_posts_thread': """SELECT id FROM Post
+    'query_list_posts_thread': """SELECT * FROM Post
                                   WHERE thread = %s
                                   ORDER BY date DESC
                                 """,
@@ -167,7 +177,7 @@ queries = {
                             message = %s
                             WHERE id = %s""",
 
-    'query_list_users_forum': """SELECT u.email FROM Post p
+    'query_list_users_forum': """SELECT u.* FROM Post p
                                   JOIN User u ON u.email = p.User_email
                                   WHERE p.Forum_short_name = %s
                                   GROUP BY u.name DESC

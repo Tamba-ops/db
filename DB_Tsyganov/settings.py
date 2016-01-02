@@ -60,8 +60,8 @@ WSGI_APPLICATION = 'DB_Tsyganov.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        #'NAME': 'DB_Tsyganov',
-        'NAME': 'DB_Tsyganov_playground',
+        'NAME': 'DB_Tsyganov',
+        # 'NAME': 'DB_Tsyganov_playground',
         'USER': 'root',
         'PASSWORD': '123456',
         'HOST': 'localhost'

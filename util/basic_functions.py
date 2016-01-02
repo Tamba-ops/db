@@ -45,15 +45,23 @@ def convert_fields_to_json(details, entity):
         if field == 'email' and entity == 'user':
             user_email = details[index]
 
-        if field == 'subscriptions':
+        if field == 'followers':
+            cursor = connection.cursor()
+            cursor.execute(queries['query_followers_user'], [user_email])
+            result["followers"] = convert_to_one_array(cursor)
+        elif field == 'following':
+            cursor = connection.cursor()
+            cursor.execute(queries['query_following_user'], [user_email])
+            result["following"] = convert_to_one_array(cursor)
+        elif field == 'subscriptions':
             cursor = connection.cursor()
             cursor.execute(queries['query_count_user_subscriptions'], user_email)
             cursor.close()
             subscriptions = convert_to_one_array(cursor)
 
             result[field] = convert_if_needed(field, subscriptions)
-        # elif field == 'mpath':
-        #     pass
+            # elif field == 'mpath':
+            #     pass
             # field = 'parent'
             # mpath_parent = details[index]
             #
@@ -71,7 +79,6 @@ def convert_fields_to_json(details, entity):
         else:
             result[field] = convert_if_needed(field, details[index])
 
-    print(result)
     return result
 
 
@@ -138,7 +145,8 @@ def create_basic(request, entity):
             raise Code3Exception("Invalid request")
 
     if entity == 'post':
-        data.append(create_mpath(request_post.get('parent')))
+        data.append("")
+        # data.append(create_mpath(request_post.get('parent')))
 
     query_create_key = 'query_insert_' + entity
     query_create = queries[query_create_key]
@@ -156,8 +164,6 @@ def create_basic(request, entity):
             else:
                 all_parameters[name] = False
 
-    print(query_create)
-    print(data)
     try:
         cursor.execute(query_create, data)
     except IntegrityError:
@@ -273,7 +279,7 @@ def handle_list_request(request, query, data=None):
         data.insert(0, int(since_id))
         query_where_new = ' WHERE id >= %s AND'
         query_where_user = ' WHERE u.id >= %s AND'
-        query_where_post = 'WHERE p.Forum_short_name'
+        query_where_post = ' p.Forum_short_name'
         if query.find(query_where_post) != -1:
             query = query.replace(query_where, query_where_user)
         elif query.find(query_where) != -1:
@@ -327,27 +333,31 @@ def list_basic(request, entity):
     # else:
     data.append(key)
 
-    print(query)
-    print(data)
     cursor.execute(query, data)
 
-    result_ids = convert_to_one_array(cursor)
+    result = cursor.fetchall()
+    result_conv = []
+
+    related = request.GET.getlist('related')
+
+    for row in result:
+        result_conv.append(handle_related_entities(related, convert_fields_to_json(row, entity)))
+
+    # result_ids = convert_to_one_array(cursor)
 
     # for raw in result_ids:
     #     print(raw)
 
-    related = request.GET.getlist('related')
-
-    for index, entity_id in enumerate(result_ids):
-        if entity == 'user':
-            from my_user.views import get_details_user
-            temp = get_details_user(entity_id)
-        else:
-            temp = get_details_basic(entity_id, entity, related)
-        result_ids[index] = temp
+    # for index, entity_id in enumerate(result_ids):
+    #     if entity == 'user':
+    #         from my_user.views import get_details_user
+    #         temp = get_details_user(entity_id)
+    #     else:
+    #         temp = get_details_basic(entity_id, entity, related)
+    #     result_ids[index] = temp
 
     cursor.close()
-    return create_response_code_0(result_ids)
+    return create_response_code_0(result_conv)
 
 
 def update_boolean_field(request, entity, action):
