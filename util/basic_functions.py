@@ -60,19 +60,6 @@ def convert_fields_to_json(details, entity):
             subscriptions = convert_to_one_array(cursor)
 
             result[field] = convert_if_needed(field, subscriptions)
-            # elif field == 'mpath':
-            #     pass
-            # field = 'parent'
-            # mpath_parent = details[index]
-            #
-            # cursor.execute(queries['query_find_id_of_parent'], mpath_parent[:-6])
-            # parent_id = cursor.fetchone()
-            # print('parent id is ' + parent_id)
-            # if parent_id:
-            #     parent_id = parent_id[0]
-            # else:
-            #     parent_id = None
-            # result[field] = convert_if_needed(field, parent_id)
         elif field == 'points':
             result[field] = \
                 convert_if_needed(field, result['likes'] - result['dislikes'])
@@ -167,15 +154,11 @@ def create_basic(request, entity):
     try:
         cursor.execute(query_create, data)
     except IntegrityError:
-        message = 'Cannot create ' + entity
-        raise Code5Exception(message)
-
-    # except IntegrityError:
-    #     if entity == 'user':
-    #         message = 'Cannot create ' + entity
-    #         raise Code5Exception(message)
-    #     else:
-    #         pass
+        if entity == 'user':
+            message = 'Cannot create ' + entity
+            raise Code5Exception(message)
+        else:
+            pass
 
     query_id_key = 'query_select_max_id_' + entity
     query_id = queries[query_id_key]
@@ -317,20 +300,8 @@ def list_basic(request, entity):
 
     query = queries[query_key]
 
-    # related = request.GET.getlist('related')
-    # for related_entity in related:
-    #     addition = join.get(entity).get(related_entity)
-    #     if addition is not None:
-    #         query.replace(entity.title(), entity.title() +
-    #                       join.get(entity).get(related_entity))
-    #     else:
-    #         raise Code5Exception
-
     data = []
     query = handle_list_request(request, query, data)
-    # if query_string == 'forum' and entity == 'user':
-    #     #data.insert(0, key)
-    # else:
     data.append(key)
 
     cursor.execute(query, data)
@@ -342,19 +313,6 @@ def list_basic(request, entity):
 
     for row in result:
         result_conv.append(handle_related_entities(related, convert_fields_to_json(row, entity)))
-
-    # result_ids = convert_to_one_array(cursor)
-
-    # for raw in result_ids:
-    #     print(raw)
-
-    # for index, entity_id in enumerate(result_ids):
-    #     if entity == 'user':
-    #         from my_user.views import get_details_user
-    #         temp = get_details_user(entity_id)
-    #     else:
-    #         temp = get_details_basic(entity_id, entity, related)
-    #     result_ids[index] = temp
 
     cursor.close()
     return create_response_code_0(result_conv)
@@ -437,17 +395,6 @@ def validate_response(func):
             return create_response_code_5(str(e5))
         except Code1Exception as e1:
             return create_response_code_1(str(e1))
-
-        except Exception as e:
-            print("Exception is \n")
-            print(e)
-            traceback.print_exc()
-            generic_user = {
-                "id": None,
-                "short_name": None,
-                "email": None
-            }
-            return create_response_code_0(generic_user)
 
     return func_wrapper
 
