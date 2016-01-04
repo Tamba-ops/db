@@ -3,7 +3,6 @@ USE DB_Tsyganov;
 alter TABLE Post ADD COLUMN parent INTEGER;
 ALTER TABLE Post MODIFY COLUMN parent INTEGER AFTER isSpam;
 
-CREATE INDEX user_name_email ON User (name, email);
 CREATE INDEX post_thread_date ON Post (thread, date);
 CREATE INDEX post_user_date ON Post (User_email, date);
 CREATE INDEX post_forum_email ON Post (Forum_short_name, User_email);

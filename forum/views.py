@@ -28,5 +28,4 @@ def details(request):
 
 @validate_response
 def list_users(request):
-    #return create_response_code_0({})
     return list_basic(request, 'user')

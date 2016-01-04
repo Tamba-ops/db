@@ -16,7 +16,7 @@ def clear(request):
     cursor.execute(queries['query_change_foreign_check'], 0)
     for entity in ['User', 'Forum', 'Thread', 'Post', 'Subscriptions', 'Followers']:
         cursor.execute(queries['query_delete'] + entity)
-    cursor.execute(queries['query_change_foreign_check'], 0)
+    cursor.execute(queries['query_change_foreign_check'], 1)
     # cursor.close()
     return create_response_code_0('OK')
 
@@ -72,7 +72,6 @@ def convert_fields_to_json(details, entity):
 
 def convert_if_needed(field, value):
     if field == 'date' and type(value) is not date:
-        value = str(value).replace('+00:00', '')
         value = str(value).replace('+00:00', '')
     elif check_boolean(field):
         return parse_boolean(value)
