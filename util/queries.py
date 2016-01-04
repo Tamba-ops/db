@@ -174,7 +174,7 @@ queries = {
     'query_list_users_forum': """SELECT u.* FROM Post p
                                   JOIN User u ON u.email = p.User_email
                                   WHERE p.Forum_short_name = %s
-                                  GROUP BY u.name DESC
+                                  GROUP BY u.email DESC
                                 """,
 
     'query_list_users_forum_v2': """SELECT u.* FROM User u JOIN (
