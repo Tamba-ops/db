@@ -1,7 +1,7 @@
 # coding=utf-8
 from django.db import connection, IntegrityError
 from django.views.decorators.csrf import csrf_exempt
-from util.basic_functions import convert_to_one_array,\
+from util.basic_functions import \
     create_basic, get_details_basic, handle_list_request, \
     update, list_basic, validate_response, convert_fields_to_json
 from util.errors import Code3Exception, Code5Exception
@@ -23,22 +23,7 @@ def details(request):
     if not email:
         raise Code3Exception
 
-    return create_response_code_0(get_details_user(email))
-
-
-def get_details_user(email, query_followers=queries['query_followers_user'],
-                     query_following=queries['query_following_user']):
-
-    response = get_details_basic(email, 'user')
-
-    cursor = connection.cursor()
-    cursor.execute(query_followers, [email])
-    response["followers"] = convert_to_one_array(cursor)
-
-    cursor.execute(query_following, [email])
-    response["following"] = convert_to_one_array(cursor)
-
-    return response
+    return create_response_code_0(get_details_basic(email, 'user'))
 
 
 @validate_response
@@ -68,12 +53,7 @@ def list_follow_relations(request, entity):
     for row in cursor:
         result.append(convert_fields_to_json(row, 'user'))
 
-    # followers = convert_to_one_array(cursor)
-
-    # result = []
-
-    # for follower in followers:
-    #     result.append(get_details_user(follower))
+    # cursor.close()
 
     return create_response_code_0(result)
 
@@ -109,7 +89,9 @@ def change_followers(request, query, message):
     except IntegrityError:
         raise Code5Exception(message)
 
-    return create_response_code_0(get_details_user(follower_email))
+    # cursor.close()
+
+    return create_response_code_0(get_details_basic(follower_email, 'user'))
 
 
 @csrf_exempt

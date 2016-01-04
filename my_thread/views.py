@@ -70,6 +70,7 @@ def change_thread_availability(request, action):
 
     cursor = connection.cursor()
     cursor.execute(queries['query_' + action + '_posts_in_deleted_thread'], thread)
+    # cursor.close()
 
     return update_boolean_field(request, 'thread', action)
 
@@ -89,7 +90,6 @@ def unsubscribe(request):
 @csrf_exempt
 @validate_response
 def change_subscription_status(request, action):
-    cursor = connection.cursor()
 
     request_post = parse_post(request)
     thread_id = request_post.get('thread')
@@ -99,11 +99,14 @@ def change_subscription_status(request, action):
 
     query_change = 'query_subscriptions_' + action
 
+    cursor = connection.cursor()
+
     try:
         cursor.execute(queries[query_change], [user, thread_id])
     except IntegrityError:
         raise Code5Exception('cannot change subscription status')
 
+    # cursor.close()
     return create_response_code_0({"thread": thread_id,
                                    "user": user})
 

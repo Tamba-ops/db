@@ -20,8 +20,6 @@ queries = {
                               WHERE Follower_email = %s and
                               Followee_email = %s""",
 
-    'query_select_max_id_user': "SELECT LAST_INSERT_ID()",
-
     'query_select_user': "SELECT * FROM User WHERE email = %s",
 
     'query_followers_user': """SELECT Follower_email FROM Followers
@@ -56,8 +54,6 @@ queries = {
                             User_email = %s
                           """,
 
-    'query_select_max_id_forum': "SELECT LAST_INSERT_ID()",
-
     'query_select_forum': "SELECT * FROM Forum WHERE short_name = %s",
 
     'query_insert_thread': """INSERT INTO
@@ -71,8 +67,6 @@ queries = {
                                 User_email = %s,
                                 Forum_short_name = %s
                               """,
-
-    'query_select_max_id_thread': "SELECT LAST_INSERT_ID()",
 
     'query_select_thread': "SELECT * FROM Thread WHERE id = %s",
 
@@ -136,7 +130,7 @@ queries = {
 
     'query_select_post': "SELECT * FROM Post WHERE id = %s",
 
-    'query_select_max_id_post': "SELECT LAST_INSERT_ID()",
+    'query_select_max_id': "SELECT LAST_INSERT_ID()",
 
     'query_list_posts_forum': """SELECT * FROM Post
                                   WHERE Forum_short_name = %s
@@ -182,6 +176,12 @@ queries = {
                                   WHERE p.Forum_short_name = %s
                                   GROUP BY u.name DESC
                                 """,
+
+    'query_list_users_forum_v2': """SELECT u.* FROM User u JOIN (
+                                    SELECT User_email FROM Post p
+                                    WHERE p.Forum_short_name = %s
+                                    GROUP BY User_email DESC) as pUe
+                                    ON u.email = User_email ORDER BY u.name""",
 
     'query_post_mpath': "SELECT mpath FROM Post WHERE id = %s",
 

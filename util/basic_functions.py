@@ -1,5 +1,4 @@
 # coding=utf-8
-import traceback
 from django.db import connection, IntegrityError
 from django.utils.datetime_safe import date
 from django.views.decorators.csrf import csrf_exempt
@@ -18,7 +17,7 @@ def clear(request):
     for entity in ['User', 'Forum', 'Thread', 'Post', 'Subscriptions', 'Followers']:
         cursor.execute(queries['query_delete'] + entity)
     cursor.execute(queries['query_change_foreign_check'], 0)
-    cursor.close()
+    # cursor.close()
     return create_response_code_0('OK')
 
 
@@ -31,7 +30,7 @@ def status(request):
         cursor.execute(queries['query_count_' + entity])
         response[entity] = cursor.fetchone()[0]
 
-    cursor.close()
+    # cursor.close()
     return create_response_code_0(response)
 
 
@@ -49,14 +48,16 @@ def convert_fields_to_json(details, entity):
             cursor = connection.cursor()
             cursor.execute(queries['query_followers_user'], [user_email])
             result["followers"] = convert_to_one_array(cursor)
+            # cursor.close()
         elif field == 'following':
             cursor = connection.cursor()
             cursor.execute(queries['query_following_user'], [user_email])
             result["following"] = convert_to_one_array(cursor)
+            # cursor.close()
         elif field == 'subscriptions':
             cursor = connection.cursor()
             cursor.execute(queries['query_count_user_subscriptions'], user_email)
-            cursor.close()
+            # cursor.close()
             subscriptions = convert_to_one_array(cursor)
 
             result[field] = convert_if_needed(field, subscriptions)
@@ -73,7 +74,7 @@ def convert_if_needed(field, value):
     if field == 'date' and type(value) is not date:
         value = str(value).replace('+00:00', '')
         value = str(value).replace('+00:00', '')
-    if check_boolean(field):
+    elif check_boolean(field):
         return parse_boolean(value)
     return value
 
@@ -105,11 +106,12 @@ def create_mpath(parent_id):
         cursor.execute(queries['query_count_post'])
 
     new_id = cursor.fetchone()[0]
+    # cursor.close()
 
     mpath_number = create_mpath_number(new_id)
 
     mpath += mpath_number
-    cursor.close()
+
     return mpath
 
 
@@ -137,7 +139,6 @@ def create_basic(request, entity):
 
     query_create_key = 'query_insert_' + entity
     query_create = queries[query_create_key]
-    cursor = connection.cursor()
 
     for name in optional_parameters_names:
         parameter = request_post.get(name, 'iNone')
@@ -151,6 +152,7 @@ def create_basic(request, entity):
             else:
                 all_parameters[name] = False
 
+    cursor = connection.cursor()
     try:
         cursor.execute(query_create, data)
     except IntegrityError:
@@ -160,15 +162,14 @@ def create_basic(request, entity):
         else:
             pass
 
-    query_id_key = 'query_select_max_id_' + entity
-    query_id = queries[query_id_key]
+    query_id = queries['query_select_max_id']
 
     cursor.execute(query_id)
 
     all_parameters['id'] = cursor.fetchone()[0]
 
     resp = create_response_code_0(all_parameters)
-    cursor.close()
+    # cursor.close()
     return resp
 
 
@@ -182,7 +183,7 @@ def get_details_basic(key, entity, related=None):
     message = 'There is no such ' + entity
     if not row:
         raise Code1Exception(message)
-    cursor.close()
+    # cursor.close()
     return handle_related_entities(related, convert_fields_to_json(row[0], entity))
 
 
@@ -197,8 +198,7 @@ def handle_related_entities(related, response):
             user = response.get('user', 'iNone')
             if user == 'iNone':
                 raise Code3Exception("Invalid request")
-            from my_user.views import get_details_user
-            response['user'] = get_details_user(user)
+            response['user'] = get_details_basic(user, 'user')
         if 'thread' in related:
             thread = response.get('thread', 'iNone')
             if thread == 'iNone':
@@ -282,8 +282,6 @@ def list_basic(request, entity):
     user = request.GET.get('user')
     thread = request.GET.get('thread')
 
-    cursor = connection.cursor()
-
     if user:
         key = user
         query_string = 'user'
@@ -304,30 +302,32 @@ def list_basic(request, entity):
     query = handle_list_request(request, query, data)
     data.append(key)
 
+    cursor = connection.cursor()
     cursor.execute(query, data)
 
     result = cursor.fetchall()
     result_conv = []
+    # cursor.close()
 
     related = request.GET.getlist('related')
 
     for row in result:
         result_conv.append(handle_related_entities(related, convert_fields_to_json(row, entity)))
 
-    cursor.close()
     return create_response_code_0(result_conv)
 
 
 def update_boolean_field(request, entity, action):
-    cursor = connection.cursor()
+
     entity_key = parse_post(request)[entity]
     if not entity_key:
         raise Code3Exception("Invalid request")
 
     query_update = 'query_update_' + entity + '_' + action
 
+    cursor = connection.cursor()
     cursor.execute(queries[query_update], [entity_key])
-    cursor.close()
+    # cursor.close()
     return create_response_code_0({entity: entity_key})
 
 
@@ -345,7 +345,7 @@ def vote(request, entity):
 
     cursor = connection.cursor()
     cursor.execute(queries[query_vote_key], entity_key)
-    cursor.close()
+    # cursor.close()
     return create_response_code_0(get_details_basic(entity_key, entity))
 
 
@@ -374,14 +374,10 @@ def update(request, entity, parameters_to_change):
         cursor.execute(queries[query_update_key], data)
     except IntegrityError:
         raise Code5Exception('cannot update ' + entity)
+    # cursor.close()
 
-    if entity == 'user':
-        from my_user.views import get_details_user
-        response = get_details_user(entity_key)
-    else:
-        response = get_details_basic(entity_key, entity)
+    response = get_details_basic(entity_key, entity)
 
-    cursor.close()
     return create_response_code_0(response)
 
 
